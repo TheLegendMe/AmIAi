@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Frontend - React application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_WS_URL=ws://localhost:4000
+      - VITE_API_URL=http://localhost:4000
+    depends_on:
+      - backend
+    networks:
+      - amiai-network
+
+  # Backend - Node.js game server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - CORS_ORIGIN=http://localhost:3000
+      - CORS_ORIGIN=http://192.168.139.130:3000
+      - REDIS_URL=redis://redis:6380
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - redis
+      - ai-service
+    networks:
+      - amiai-network
+
+  # AI Service - Python FastAPI
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - amiai-network
+
+  # Redis - Session storage (optional for MVP)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6380"
+    volumes:
+      - redis-data:/data
+    networks:
+      - amiai-network
+
+networks:
+  amiai-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+
